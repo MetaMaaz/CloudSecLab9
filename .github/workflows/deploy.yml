@@ -1,25 +1,24 @@
 name: Deploy to EC2 (Docker)
 on:
-push:
-branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
 jobs:
-deploy:
-runs-on: ubuntu-latest
-steps:
-- name: Checkout code
-uses: actions/checkout@v3
-- name: Setup SSH key
-run: |
-mkdir -p ~/.ssh
-echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-chmod 600 ~/.ssh/id_ed25519
-- name: Copy repo to EC2
-GC: Automation - CI/CD in the Cloud
-COMM034
-run: |
-rsync -az --delete -e "ssh -o StrictHostKeyChecking=no" ./ $
-{{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/apps/Lab9
-- name: Run deploy script on EC2
-run: |
-ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@$
-{{ secrets.EC2_HOST }} "cd ~/apps/Lab9 && ./deploy.sh"
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.7.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy repo to EC2
+        run: |
+          rsync -az --delete --exclude='.git' -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/apps/Lab9
+
+      - name: Run deploy script on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cd ~/apps/Lab9 && ./deploy.sh"
